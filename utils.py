@@ -36,8 +36,8 @@ def dot_numpy(vector1 , vector2,emb_size = 512):
     return cosV12
 
 def to_var(x, volatile=False):
-    if torch.cuda.is_available():
-        x = x.cuda()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    x = x.to(device)
     return Variable(x, volatile=volatile)
 
 def softmax_cross_entropy_criterion(logit, truth, is_average=True):

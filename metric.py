@@ -84,6 +84,7 @@ def metric(logit, truth):
     return correct, prob
 
 def do_valid( net, test_loader, criterion ):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     valid_num  = 0
     losses   = []
     corrects = []
@@ -94,8 +95,8 @@ def do_valid( net, test_loader, criterion ):
         b,n,c,w,h = input.size()
         input = input.view(b*n,c,w,h)
 
-        input = input.cuda()
-        truth = truth.cuda()
+        input = input.to(device)
+        truth = truth.to(device)
 
         with torch.no_grad():
             logit = net(input)
@@ -133,6 +134,7 @@ def do_valid( net, test_loader, criterion ):
     return valid_loss,[probs[:, 1], labels]
 
 def do_valid_test( net, test_loader, criterion ):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     valid_num  = 0
     losses   = []
     corrects = []
@@ -143,8 +145,8 @@ def do_valid_test( net, test_loader, criterion ):
         b,n,c,w,h = input.size()
         input = input.view(b*n,c,w,h)
 
-        input = input.cuda()
-        truth = truth.cuda()
+        input = input.to(device)
+        truth = truth.to(device)
 
         with torch.no_grad():
             logit = net(input)
@@ -179,16 +181,17 @@ def do_valid_test( net, test_loader, criterion ):
     return valid_loss,[probs[:, 1], labels]
 
 def infer_test( net, test_loader):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     valid_num  = 0
     probs = []
 
     for i, (input, truth) in enumerate(tqdm(test_loader)):
         b,n,c,w,h = input.size()
         input = input.view(b*n,c,w,h)
-        input = input.cuda()
+        input = input.to(device)
 
         with torch.no_grad():
-            logit,_,_   = net(input)
+            logit   = net(input)
             logit = logit.view(b,n,2)
             logit = torch.mean(logit, dim = 1, keepdim = False)
             prob = F.softmax(logit, 1)

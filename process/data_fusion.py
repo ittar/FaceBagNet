@@ -68,7 +68,7 @@ class FDDataset(Dataset):
             color, depth, ir, label = self.val_list[index]
 
         elif self.mode == 'test':
-            color,depth,ir = self.test_list[index]
+            color,depth,ir, label = self.test_list[index]
             test_id = color+' '+depth+' '+ir
 
         color = cv2.imread(os.path.join(DATA_ROOT, color),1)

@@ -27,7 +27,7 @@ def get_fusion_model(model_name, image_size, patch_size, num_class=2):
                              init_scale=0.,
                              use_mean_pooling=True
                              )
-
+    else: net = None
 
 
     return net

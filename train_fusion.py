@@ -2,9 +2,10 @@ import os
 import sys
 import argparse
 from process.data_fusion import FDDataset
-from metric import metric, do_valid_test
-from model import get_fusion_model
+from metric import infer_test, metric, do_valid_test
+from model import get_fusion_model, get_model
 from loss.cyclic_lr import CosineAnnealingLR_with_Restart
+from process.data_helper import submission
 from utils import *
 
 def run_train(config):
@@ -60,7 +61,7 @@ def run_train(config):
     net = get_fusion_model(model_name=config.model, image_size=config.image_size, patch_size=config.patch_size)
     print(net)
     net = torch.nn.DataParallel(net)
-    net =  net.cuda()
+    net =  net.to(config.device)
 
     if initial_checkpoint is not None:
         initial_checkpoint = os.path.join(config.save_dir +'/checkpoint',initial_checkpoint)
@@ -117,8 +118,8 @@ def run_train(config):
                 iter = i + start_iter
                 # one iteration update  -------------
                 net.train()
-                input = input.cuda()
-                truth = truth.cuda()
+                input = input.to(config.device)
+                truth = truth.to(config.device)
 
                 logit = net.forward(input)
                 truth = truth.view(logit.shape[0])
@@ -174,9 +175,10 @@ def run_test(config, dir):
     initial_checkpoint = config.pretrained_model
 
     ## net ---------------------------------------
-    net = get_model(model_name=config.model, num_class=2)
+    net = get_fusion_model(model_name=config.model, image_size=config.image_size, patch_size=config.patch_size)
+    # print(net)
     net = torch.nn.DataParallel(net)
-    net =  net.cuda()
+    net =  net.to(config.device)
 
     if initial_checkpoint is not None:
         save_dir = os.path.join(config.save_dir + '/checkpoint', dir, initial_checkpoint)
@@ -186,7 +188,7 @@ def run_test(config, dir):
         if not os.path.exists(os.path.join(config.save_dir + '/checkpoint', dir)):
             os.makedirs(os.path.join(config.save_dir + '/checkpoint', dir))
 
-    valid_dataset = FDDataset(mode = 'val', modality=config.image_mode,image_size=config.image_size,
+    valid_dataset = FDDataset(mode = 'val',image_size=config.image_size,
                               fold_index=config.train_fold_index)
     valid_loader  = DataLoader( valid_dataset,
                                 shuffle=False,
@@ -194,7 +196,7 @@ def run_test(config, dir):
                                 drop_last   = False,
                                 num_workers=8)
 
-    test_dataset = FDDataset(mode = 'test', modality=config.image_mode,image_size=config.image_size,
+    test_dataset = FDDataset(mode = 'test',image_size=config.image_size,
                               fold_index=config.train_fold_index)
     test_loader  = DataLoader( test_dataset,
                                 shuffle=False,
@@ -214,12 +216,14 @@ def run_test(config, dir):
     submission(out,save_dir+'_noTTA.txt', mode='test')
 
 def main(config):
+    config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if config.mode == 'train':
         run_train(config)
 
     if config.mode == 'infer_test':
         config.pretrained_model = r'global_min_acer_model.pth'
         run_test(config, dir='global_test_36_TTA')
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -234,7 +238,7 @@ if __name__ == '__main__':
     parser.add_argument('--cycle_inter', type=int, default=50)
     parser.add_argument('--num_workers', type=int, default=32)
 
-    parser.add_argument('--mode', type=str, default='train', choices=['train','infer_test'])
+    parser.add_argument('--mode', type=str, default='infer_test', choices=['train','infer_test'])
     parser.add_argument('--pretrained_model', type=str, default=None)
     parser.add_argument('--save_dir', type=str, default='./Models')
 

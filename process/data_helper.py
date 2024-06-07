@@ -2,7 +2,7 @@ import os
 import random
 from utils import *
 
-DATA_ROOT = r'{path-to-dataset}/CASIA-SURF/phase1'
+DATA_ROOT = r'datasets/CASIA-SURF'
 TRN_IMGS_DIR = DATA_ROOT + '/Training/'
 TST_IMGS_DIR = DATA_ROOT + '/Val/'
 RESIZE_SIZE = 112
