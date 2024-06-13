@@ -142,6 +142,7 @@ def do_valid_test( net, test_loader, criterion ):
     labels = []
 
     for i, (input, truth) in enumerate(tqdm(test_loader)):
+        # if (i > 2): break
         b,n,c,w,h = input.size()
         input = input.view(b*n,c,w,h)
 

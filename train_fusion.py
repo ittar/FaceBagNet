@@ -7,6 +7,7 @@ from model import get_fusion_model, get_model
 from loss.cyclic_lr import CosineAnnealingLR_with_Restart
 from process.data_helper import submission
 from utils import *
+from torchinfo import summary
 
 def run_train(config):
     model_name = f'{config.model}_{config.image_mode}_{config.image_size}'
@@ -176,7 +177,6 @@ def run_test(config, dir):
 
     ## net ---------------------------------------
     net = get_fusion_model(model_name=config.model, image_size=config.image_size, patch_size=config.patch_size)
-    # print(net)
     net = torch.nn.DataParallel(net)
     net =  net.to(config.device)
 
@@ -210,10 +210,15 @@ def run_test(config, dir):
     valid_loss,out = do_valid_test(net, valid_loader, criterion)
     print('%0.6f  %0.6f  %0.3f  (%0.3f) \n' % (valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3]))
 
-    out = infer_test(net, test_loader)
-    print('done')
+    # out = infer_test(net, test_loader)
+    # print('done')
 
     submission(out,save_dir+'_noTTA.txt', mode='test')
+
+def run_params(config):
+    net = get_fusion_model(model_name=config.model, image_size=config.image_size, patch_size=config.patch_size)
+    net = torch.nn.DataParallel(net)
+    print(summary(net, input_size=(config.batch_size, 9, config.image_size, config.image_size)))
 
 def main(config):
     config.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -223,6 +228,10 @@ def main(config):
     if config.mode == 'infer_test':
         config.pretrained_model = r'global_min_acer_model.pth'
         run_test(config, dir='global_test_36_TTA')
+    
+    if config.mode == 'find_params':
+        config.pretrained_model = r'global_min_acer_model.pth'
+        run_params(config)
     
 
 if __name__ == '__main__':
@@ -238,7 +247,7 @@ if __name__ == '__main__':
     parser.add_argument('--cycle_inter', type=int, default=50)
     parser.add_argument('--num_workers', type=int, default=32)
 
-    parser.add_argument('--mode', type=str, default='infer_test', choices=['train','infer_test'])
+    parser.add_argument('--mode', type=str, default='infer_test', choices=['train','infer_test', 'find_params'])
     parser.add_argument('--pretrained_model', type=str, default=None)
     parser.add_argument('--save_dir', type=str, default='./Models')
 
